@@ -9,8 +9,6 @@ from ansible.module_utils.urls import *
 from ansible.errors import AnsibleError
 
 import json
-from types import SimpleNamespace
-import collections.abc
 
 def repository_exists(module):
   ret = False
@@ -70,7 +68,6 @@ def prepare_wanted_repo(module):
       "storage": {
         "blobStoreName": module.params.get('blob_store_name'),
         "strictContentTypeValidation": True,
-        "writePolicy": "ALLOW"
       }
   }
 
@@ -191,15 +188,15 @@ def delete_repository(module):
 # Merge dict recursively to get all attributes
 # Taken from https://karthikbhat.net/recursive-dict-merge-python/
 def merge(dict1, dict2):
-    for key, val in dict1.items():
-        if isinstance(val, dict):
-            dict2_node = dict2.setdefault(key, {})
-            merge(val, dict2_node)
-        else:
-            if key not in dict2:
-                dict2[key] = val
+  for key, val in dict1.items():
+    if isinstance(val, dict):
+      dict2_node = dict2.setdefault(key, {})
+      merge(val, dict2_node)
+    else:
+      if key not in dict2:
+        dict2[key] = val
 
-    return dict2
+  return dict2
 
 
 def main():
@@ -258,13 +255,9 @@ def main():
       if repository_exists(module) == True:
         existing_repo = get_repository(module)
         result['existing_repo'] = existing_repo
-        # Merge the existing and wanted repos to get values that we don't (yet) explicitely set and prevent accidental changes
 
-        # Note: For pypi it looks like we get an additional storage.writePolicy attribute, that actually only is used for hosted repos
-        # Therefore we implement a workaround and remove that property
+        # Merge the existing and wanted repos to get values that we don't (yet) explicitely set and prevent accidental changes
         merged_repo = merge(existing_repo, wanted_repo)
-        if merged_repo['format'] == 'pypi':
-          merged_repo['storage'].pop('writePolicy')
 
         result['merged_repo'] = merged_repo
 
