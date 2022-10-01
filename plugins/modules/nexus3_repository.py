@@ -31,6 +31,28 @@ def repository_exists(module):
 
   return ret
 
+def get_repository_simple(module):
+  repo = None
+
+  base_url = module.params.get('url')
+
+  # Careful, in case the format is empty the request silently fails(?)
+  api_endpoint = '/service/rest/v1/repositories/' + module.params.get('name')
+  api_url = base_url + api_endpoint
+
+  headers = {'Content-Type':'application/json'}
+
+  resp, info = fetch_url(module,method="GET",url=api_url,headers=headers)
+
+  if info["status"] == 200:
+    repo = json.loads(resp.read())
+  elif info["status"] == 404:
+    repo = None
+  else:
+    raise AnsibleError(r"Got unexpected response from Nexus: " + str(info))
+
+  return repo
+
 def get_repository(module):
   repo = None
 
@@ -241,13 +263,12 @@ def main():
 
     if module.params.get('state') == 'absent':
       if repository_exists(module) == True:
-        existing_repo = get_repository(module)
+        existing_repo = get_repository_simple(module)
         result['existing_repo'] = existing_repo
 
         delete_repository(module)
         result['action'] = "Delete"
         result['changed'] = True
-        result['existing_repo'] = existing_repo
     else:
       wanted_repo = prepare_wanted_repo(module)
       result['wanted_repo'] = wanted_repo
@@ -258,7 +279,6 @@ def main():
 
         # Merge the existing and wanted repos to get values that we don't (yet) explicitely set and prevent accidental changes
         merged_repo = merge(existing_repo, wanted_repo)
-
         result['merged_repo'] = merged_repo
 
         if existing_repo != merged_repo:
