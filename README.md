@@ -10,4 +10,8 @@ proxy for repositories used in development. No production ready
 
 ## Tested Nexus Versions:
 
-* 3.42.0
+* 3.41.1
+
+Note that there seems to be a bug with Nexus 3.41.1, where Docker repositories
+that have been configured using this module (or the API in general), are
+failing API calls after restarting Nexus.
